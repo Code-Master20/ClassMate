@@ -5,7 +5,10 @@ const {
 } = require("../utils/credentialValidatorSchema.util.js");
 const zodyCredentialValidator = require("../middlewares/zodMiddleware/zodCredentialValidator.middleware.js");
 const signUp = require("../controllers/signup.controller.js");
+const sendingOtpToEmail = require("../middlewares/expressMiddleware/sendingOtpToEmail.middleware.js");
 
-router.route("/sign-up").post(zodyCredentialValidator(signUpZodSchema), signUp);
+router
+  .route("/sign-up")
+  .post(zodyCredentialValidator(signUpZodSchema), sendingOtpToEmail, signUp);
 
 module.exports = router;
