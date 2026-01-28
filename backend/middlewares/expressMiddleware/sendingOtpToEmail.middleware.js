@@ -29,9 +29,12 @@ const sendingOtpToEmail = async (req, res, next) => {
 
     res.status(200).json({
       success: true,
-      message: "verification code sent successfully to your email",
+      message: `verification code sent successfully to ${email}`,
     });
-  } catch (error) {}
+    next();
+  } catch (error) {
+    console.error("");
+  }
 };
 
 module.exports = sendingOtpToEmail;
