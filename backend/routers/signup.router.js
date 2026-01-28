@@ -8,13 +8,21 @@ const signUp = require("../controllers/signup.controller.js");
 const sendingOtpToEmail = require("../middlewares/expressMiddleware/sendingOtpToEmail.middleware.js");
 const otpVerify = require("../middlewares/expressMiddleware/otpVerify.middleware.js");
 
-router
-  .route("/sign-up")
-  .post(
-    zodyCredentialValidator(signUpZodSchema),
-    sendingOtpToEmail,
-    otpVerify,
-    signUp,
-  );
+router.post(
+  "/sign-up",
+  zodyCredentialValidator(signUpZodSchema),
+  sendingOtpToEmail,
+);
+
+router.post("/verify-otp", otpVerify, signUp);
+
+// router
+//   .route("/sign-up")
+//   .post(
+//     zodyCredentialValidator(signUpZodSchema),
+//     sendingOtpToEmail,
+//     otpVerify,
+//     signUp,
+//   );
 
 module.exports = router;
