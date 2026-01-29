@@ -8,11 +8,13 @@ const PORT = process.env.PORT || 3000;
 
 //all middlewares
 app.use(express.json());
-app.use("/api/auth", signUpRoute);
+app.use(express.urlencoded({ extended: true }));
 
-// app.get("/", (req, res, next) => {
-//   res.send("hello from server");
-// });
+//all routes
+app.use("/api/auth", signUpRoute);
+app.get("/", (req, res, next) => {
+  res.send("hello from server");
+});
 
 connectDB().then(() => {
   console.log("Database connected, server is starting...");

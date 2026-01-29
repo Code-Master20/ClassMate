@@ -20,16 +20,20 @@ const emailOtpSchema = new mongoose.Schema(
   { timestamps: true },
 );
 
-emailOtpSchema.pre("save", async function (next) {
+emailOtpSchema.pre("save", async function () {
   try {
-    if (!this.isModified("otp")) return next();
+    const email_otp = this;
+    if (!email_otp.isModified("otp")) {
+      return;
+    }
     const saltRounds = await bcrypt.genSalt(10);
-    const hashed_otp = await bcrypt.hash(this.otp, saltRounds);
-    this.otp = hashed_otp;
-    next();
+    const hashed_otp = await bcrypt.hash(String(email_otp.otp), saltRounds);
+    email_otp.otp = hashed_otp;
+    return;
   } catch (error) {
     console.error("otp could not be hashed");
-    next(error);
+    console.log(error);
+    return;
   }
 });
 
