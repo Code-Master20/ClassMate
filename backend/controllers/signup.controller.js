@@ -14,9 +14,7 @@ const signUp = async (req, res) => {
     }
 
     const userCreated = await User.create({ username, email, password });
-
     await TemporaryUser.deleteMany({ email });
-
     const token = userCreated.generateLogTrackTkn();
 
     res.cookie("token", token, {
