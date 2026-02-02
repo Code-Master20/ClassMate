@@ -20,6 +20,14 @@ const emailOtpSchema = new mongoose.Schema(
       required: true,
       enum: ["signup", "login", "reset-password"],
     },
+    attempts: {
+      type: Number,
+      default: 0,
+    },
+    maxAttempts: {
+      type: Number,
+      default: 5,
+    },
     expiresAt: {
       type: Date,
       default: () => Date.now() + 5 * 60 * 1000,

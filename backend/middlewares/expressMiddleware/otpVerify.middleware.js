@@ -18,22 +18,40 @@ const otpVerify = async (req, res, next) => {
 
     const otpRecord = await EmailOtp.findOne({ email, purpose });
     if (!otpRecord) {
+      // await EmailOtp.deleteMany({ email, purpose });
       return new ErrorHandler(400, "otp is invalid or expired")
         .log("Otp disruptured", "otp is expired or invalid")
         .send(res);
     }
 
     const isValid = await otpRecord.compareOtp(otp);
+
     if (!isValid) {
-      return new ErrorHandler(400, "invalid OTP")
-        .log("otp vadidation", "otp is invalid")
+      otpRecord.attempts += 1;
+      await otpRecord.save();
+
+      if (otpRecord.attempts >= otpRecord.maxAttempts) {
+        await EmailOtp.deleteOne({ _id: otpRecord._id });
+        return new ErrorHandler(
+          410,
+          "Too many invalid attempts. Please request a new OTP.",
+        )
+          .log("invalid otp", "otp is not valid")
+          .send(res);
+      }
+
+      return new ErrorHandler(400, "Invalid OTP")
+        .log("otp validation", "to many attempts with invalid otp")
         .send(res);
     }
 
     if (purpose === "signup") {
       const tempUser = await TemporaryUser.findOne({ email });
       if (!tempUser) {
-        return new ErrorHandler(400, "you are signing up")
+        return new ErrorHandler(
+          410,
+          "Signup session expired. Please try signing up again.",
+        )
           .log("sign up pending", "no sign up is pending")
           .send(res);
       }
@@ -43,14 +61,22 @@ const otpVerify = async (req, res, next) => {
 
     if (purpose === "login") {
       const userData = await User.findOne({ email }).select("-password");
+      if (!userData) {
+        return new ErrorHandler(401, "Invalid login credentials")
+          .send(res)
+          .log("log in failed :", "logging failded for server interuption");
+      }
       //const userData = await User.findOne({ email }, { password: 0 });
       req.user = userData;
     }
 
-    if (purpose === "password-reset") {
+    if (purpose === "reset-password") {
       const tempUser = await TemporaryUser.findOne({ email });
       if (!tempUser) {
-        return new ErrorHandler(400, "Otp is expired")
+        return new ErrorHandler(
+          410,
+          "Password reset session expired. Please request a new OTP.",
+        )
           .log(
             "user deleted",
             "user already deleted from TemporaryUser.schema before the password reset process completd",

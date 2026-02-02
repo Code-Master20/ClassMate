@@ -46,7 +46,7 @@ const resetPasswordWithOldPassword = async (req, res, next) => {
 
 const resetPasswordWithOtp = async (req, res, next) => {
   try {
-    const { email, password } = req.body;
+    const { email, newPassword } = req.body;
     const userExisted = await User.findOne({ email });
 
     if (!userExisted) {
@@ -55,19 +55,21 @@ const resetPasswordWithOtp = async (req, res, next) => {
         .send(res);
     }
 
+    // console.log(userExisted.password);
     await TemporaryUser.create({
       username: userExisted.username,
       email,
-      password,
+      password: newPassword,
     });
 
     req.user = {
       username: userExisted.username,
       email,
-      password,
+      newPassword,
     };
-
     next();
-  } catch (error) {}
+  } catch (error) {
+    return new ErrorHandler(500, error).send(res);
+  }
 };
 module.exports = { resetPasswordWithOtp, resetPasswordWithOldPassword };

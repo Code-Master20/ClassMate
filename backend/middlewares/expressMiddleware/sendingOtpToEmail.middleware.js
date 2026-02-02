@@ -4,6 +4,7 @@ const sendOtp = require("../../services/sendOtp.service");
 const User = require("../../models/user.model");
 const ErrorHandler = require("../../utils/errorHandler.util");
 const SuccessHandler = require("../../utils/successHandler.util");
+const EmailOtp = require("../../models/emailOtp.model");
 
 // ================= SIGN UP OTP =================
 const sendingOtpForSignUp = async (req, res) => {
@@ -73,8 +74,11 @@ const sendingOtpForLogIn = async (req, res) => {
 //===============PASSWORD RESET OTP==============
 const sendingOtpForPassReset = async (req, res) => {
   try {
-    const { username, email, password } = req.user;
-    await sendOtp({ email, purpose: "reset-password" });
+    const { username, email, newPassword } = req.user;
+    await sendOtp({
+      email,
+      purpose: "reset-password",
+    });
 
     return new SuccessHandler(
       200,
@@ -86,6 +90,7 @@ const sendingOtpForPassReset = async (req, res) => {
       .send(res);
   }
 };
+
 module.exports = {
   sendingOtpForSignUp,
   sendingOtpForLogIn,

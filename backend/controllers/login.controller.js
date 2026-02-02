@@ -8,10 +8,11 @@ const logIn = async (req, res, _) => {
     const userFound = await User.findOne({ email });
     const token = userFound.generateLogTrackTkn();
 
+    const isProd = process.env.NODE_ENV === "production";
     res.cookie("token", token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "strict", // or "none" if frontend is on another domain
+      secure: isProd,
+      sameSite: isProd ? "none" : "strict", // or "none" if frontend is on another domain
       maxAge: 30 * 24 * 60 * 60 * 1000,
     });
 

@@ -27,6 +27,7 @@ router.post(
 );
 
 router.post("/reset-password-with-otp/verify-otp", otpVerify, logIn);
+
 module.exports = router;
 
 /*
