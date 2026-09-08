@@ -12,6 +12,36 @@ export const fetchNotifications = createAsyncThunk(
         },
       });
 
+      // From backend  data would be loked like this ---->
+                                  //       {
+                                  //   "status": 200,
+                                  //   "success": true,
+                                  //   "message": "Notifications",
+                                  //   "data": {
+                                  //     "items": [
+                                  //       {
+                                  //         "_id": "notification123",
+                                  //         "type": "friend_request",
+                                  //         "message": "John sent you a friend request",
+                                  //         "link": null,
+                                  //         "read": false,
+                                  //         "createdAt": "2026-09-06T00:20:00.000Z",
+                                  //         "actor": {
+                                  //           "_id": "john123",
+                                  //           "username": "john",
+                                  //           "avatar": "john.jpg",
+                                  //           "profession": "Developer"
+                                  //         }
+                                  //       }
+                                  //     ],
+                                  //     "unreadCount": 1,
+                                  //     "page": 1,
+                                  //     "limit": 30,
+                                  //     "hasMore": false
+                                  //   }
+                                  // }
+
+
       return response.data;
     } catch (error) {
       return thunkAPI.rejectWithValue({

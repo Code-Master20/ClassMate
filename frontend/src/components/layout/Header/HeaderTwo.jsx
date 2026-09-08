@@ -9,6 +9,7 @@ import noProfile from "../../../assets/noProfile.png";
 import { useSelector } from "react-redux";
 
 export const HeaderTwo = () => {
+  
   const { user } = useSelector((state) => state.auth);
   const { unreadCount } = useSelector((state) => state.notifications);
   const getNavClassName = ({ isActive }) =>

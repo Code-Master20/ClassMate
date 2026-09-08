@@ -15,7 +15,6 @@ const notificationsSlice = createSlice({
     unreadCount: 0,
     deletingId: null,
     errorMessage: null,
-
     page: 1,
     hasMore: true,
   },
@@ -28,6 +27,24 @@ const notificationsSlice = createSlice({
       // -----------------------------
       // FETCH NOTIFICATIONS
       // -----------------------------
+
+      // "Which page did I ask the backend for?"
+      // const requestedPage = action.meta.arg?.page ?? 1;
+
+      // "Which page did the backend say it returned?"
+      // const page = action.payload?.data?.page ?? requestedPage;
+
+      // action.meta.arg comes from your dispatch
+      // Your Thunks is  :
+      // export const fetchNotifications = createAsyncThunk(
+      //   "notifications/fetchNotifications",
+      //      async (params = {}, thunkAPI) => {
+      // And inside it: page: params.page ?? 1
+      // Suppose somewhere you do: dispatch(fetchNotifications({ page: 2 }));
+      // Then Redux Toolkit stores the argument you passed to the thunk in: action.meta.arg
+      // So: action.meta.arg is { page: 2 }
+      // therefore action.meta.arg?.page is 2
+      
       .addCase(fetchNotifications.pending, (state, action) => {
         const requestedPage = action.meta.arg?.page ?? 1;
 
@@ -61,10 +78,11 @@ const notificationsSlice = createSlice({
            * This is important because Root.jsx refreshes
            * notifications every 15 seconds.
            */
-          const existingItems = state.items;
+          const existingItems = state.items; // this is the existing items fetched from the backend and stored in the state
+          //  with first trigger of fetchNotifications.fulfilled
 
           const itemMap = new Map();
-
+// below is setting all items existing and newly fetchd inside itemMap so that we can have a unique list of items without duplicates
           for (const item of existingItems) {
             itemMap.set(`${item._id}`, item);
           }
@@ -73,6 +91,7 @@ const notificationsSlice = createSlice({
             itemMap.set(`${item._id}`, item);
           }
 
+          // below is converting all the unique items inside itemMap to an array and storing it in state.items
           state.items = Array.from(itemMap.values());
 
           state.loading = false;
