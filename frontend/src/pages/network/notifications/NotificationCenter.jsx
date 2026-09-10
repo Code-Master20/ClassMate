@@ -11,7 +11,6 @@ import {
 import styles from "./NotificationCenter.module.css";
 
 const SWIPE_DELETE_THRESHOLD = 96;
-const SWIPE_MAX_OFFSET = 132;
 const NOTIFICATIONS_CACHE_TTL_MS = 60 * 1000; // converting 60 s into milli sec that is 6000 milli seconds
 const notificationsPageCache = new Map();
 const NOTIFICATIONS_PAGE_SIZE = 30;
@@ -88,23 +87,9 @@ export const NotificationCenter = () => {
   const [cachedItemsSnapshot, setCachedItemsSnapshot] = useState(
     () => cachedEntry?.items || [],
   );
-  const [activeSwipe, setActiveSwipe] = useState({
-    notificationId: "",
-    offsetX: 0,
-  });  // here effectiveItems is being destructured and filtered based on the 
-  // search text and sorted based on the sort order. The filtering is done by 
-  // checking if the searchable text (which includes the notification message, 
-  // actor's username, profession, and email) includes the normalized search text. 
-  // The sorting is done based on the createdAt date of the notifications, either in 
-  // ascending or descending order depending on 
-  // the sort order selected by the user.
-  const swipeGestureRef = useRef({
-    notificationId: "",
-    startX: 0,
-    startY: 0,
-    offsetX: 0,
-    suppressClickFor: "",
-  });
+
+
+ 
   const loadMoreRef = useRef(null);
 
   useEffect(() => {
@@ -221,7 +206,7 @@ export const NotificationCenter = () => {
   // The sorting is done based on the createdAt date of the notifications, either in 
   // ascending or descending order depending on 
   // the sort order selected by the user.
-  const visibleItems = [...effectiveItems] //TOMORROW STARTS HERE
+  const visibleItems = [...effectiveItems]
     .filter((notification) => {
       if (!normalizedSearchText) {
         return true;
@@ -256,6 +241,39 @@ export const NotificationCenter = () => {
         : secondDate - firstDate;
     });
 
+
+
+  // swipeGestureRef is an object , it has properties notificationId, startX, startY, offsetX, and suppressClickFor. 
+  // It is used to track the current swipe gesture state of a notification. 
+  // The useRef hook is used to create a mutable reference that persists across re-renders of the component. 
+  // This allows the component to keep track of the swipe gesture state without triggering a re-render when the state changes.
+  const swipeGestureRef = useRef({
+    notificationId: "",
+    startX: 0,
+    startY: 0,
+    offsetX: 0,
+    suppressClickFor: "",
+  });
+
+// So we're basically telling the browser:
+// "The notification card can move left, but don't let it move farther than 132px."
+  const SWIPE_MAX_OFFSET = 132;
+
+    // THis is for swipe delete functionality, when user swipe left on the notification, it will be deleted from the list and also from the backend
+    //****************************************** UNDERSTANDING THIS ************************************************
+    // if notificationId is eaual to notificationId that was passed during the calling of handleDeleteNotification
+    // then activeSwipe is set to notificationId:"" and offsetX:0, else current
+    // means whatsoever the current state of activeSwipe is, it will be set to that
+    //and remember that activeSwipe has already properties notificationId and offsetX. those it received at the time of swipe start
+
+  // activeSwipe is an object with properties notificationId and offsetX, which is used to track the current swipe state of a notification.
+  const [activeSwipe, setActiveSwipe] = useState({
+    notificationId: "",
+    offsetX: 0,
+  });
+
+  // this handleDeleteNotification is called inside handleSwipeEnd function
+  // so that on swipe end , notification can be deleted successfully
   const handleDeleteNotification = async (notificationId) => {
     setActiveSwipe((current) =>
       current.notificationId === notificationId
@@ -263,13 +281,31 @@ export const NotificationCenter = () => {
         : current,
     );
 
+    // After deleting the notification whatsoever the result of the deleterNotification action is,
+    // it will store the result in resultAction
     const resultAction = await dispatch(deleteNotification(notificationId));
 
+    // if resultAction matches deleteNotification.fulfilled, 
+    // it means the notification has been successfully deleted from the backend, and a success toast message will be shown to the user. 
+    // If not, no toast message will be shown.
     if (deleteNotification.fulfilled.match(resultAction)) {
       toast.success(resultAction.payload?.message || "Notification removed");
     }
   };
 
+// suppose user touches the notification at clientX = 500 and clientY = 300
+// then touch = {
+//   clientX: 500,
+//   clientY: 300
+// }
+// Finally this swipeGestureRef.current is like ====> 
+//   swipeGestureRef.current = {
+//   notificationId,
+//   startX: touch.clientX,
+//   startY: touch.clientY,
+//   offsetX: 0,
+//   suppressClickFor: swipeGestureRef.current.suppressClickFor,
+// };
   const handleSwipeStart = (notificationId, touch) => {
     swipeGestureRef.current = {
       notificationId,
@@ -279,6 +315,10 @@ export const NotificationCenter = () => {
       suppressClickFor: swipeGestureRef.current.suppressClickFor,
     };
 
+    // if activeSwipe.notificationId === notificationId, 
+    // then activeSwipe will be set to current, else it will be set to notificationId and offsetX:0
+    // current means whatsoever properties already present in activeSwipe object, 
+    // it will be set to that, and no changes will be made to activeSwipe
     setActiveSwipe((current) =>
       current.notificationId === notificationId
         ? current
@@ -287,20 +327,48 @@ export const NotificationCenter = () => {
   };
 
   const handleSwipeMove = (notificationId, touch) => {
+    // if notificationId that is activeSwipe already has not matches to the notificationId(passed at this function calling), 
+    // do not execute handleSweipeMove
     if (swipeGestureRef.current.notificationId !== notificationId) {
       return;
     }
-
+    // suppose user slides his finger for clientX:400 and clientY: 310, then deltaX = 400 - 500 = -100 and deltaY = 310 - 300 = 10
     const deltaX = touch.clientX - swipeGestureRef.current.startX;
     const deltaY = touch.clientY - swipeGestureRef.current.startY;
-
+    // this is to stop execution of handleSwipeMove if slide is more vertical then horizontal
+    // deltaX = -100 and deltaY = 10, so Math.abs(deltaX) = 100 and Math.abs(deltaY) = 10, 
+    // so this condition will not be satisfied and execution will continue
     if (Math.abs(deltaX) <= Math.abs(deltaY)) {
       return;
     }
 
+    // SWIPE_MAX_OFFSET = 132 defined at the top of codes.
+    // why SWIPE_MAX_OFFSET is negative cause swipe is left
+    // deltaX=-100
+    // so inside nextOffsetX = -100
+    // this actually calculated the actual move of the notification card
     const nextOffsetX = Math.max(-SWIPE_MAX_OFFSET, Math.min(0, deltaX));
+    // now swipeGestureRef has 
+    // {
+    // offsetX = -100, 
+    // notificationId = notificationId, 
+    // startX=500, startY=300, 
+    // suppressClickFor = ""
+    // }
     swipeGestureRef.current.offsetX = nextOffsetX;
+  /*
+  now swipeGestureRef has 
+  {
+    offsetX = -100, 
+    notificationId = notificationId, 
+    startX=500, startY=300, 
+    suppressClickFor = notificationId
+  }
+  */
 
+
+  // "If the user has moved their finger horizontally by more than 10px, consider it a real swipe rather than an accidental tiny movement."
+  // so receives that notification id to swipeGestureRef
     if (Math.abs(nextOffsetX) > 10) {
       swipeGestureRef.current.suppressClickFor = notificationId;
     }
@@ -330,6 +398,7 @@ export const NotificationCenter = () => {
   };
 
   const handleNotificationNavigation = (notification, event) => {
+    // this is preventing navigation on swipe a notification card
     if (swipeGestureRef.current.suppressClickFor === notification._id) {
       swipeGestureRef.current.suppressClickFor = "";
       event.preventDefault();
@@ -349,7 +418,6 @@ export const NotificationCenter = () => {
     <main className={styles.page}>
       <section className={styles.content}>
         <header className={styles.pageHeader}>
-          <p>Network</p>
           <h1>Notifications</h1>
         </header>
 
@@ -464,10 +532,10 @@ export const NotificationCenter = () => {
                   notification.read ? styles.readCard : styles.unreadCard
                 }`}
                 onTouchStart={(event) =>
-                  handleSwipeStart(notification._id, event.changedTouches[0])
+                  handleSwipeStart(notification._id, event.changedTouches[0]) //event.changeTouches[0] has clientX and clientY values
                 }
                 onTouchMove={(event) =>
-                  handleSwipeMove(notification._id, event.changedTouches[0])
+                  handleSwipeMove(notification._id, event.changedTouches[0]) //event.changeTouches[0] has clientX and clientY values
                 }
                 onTouchEnd={() => handleSwipeEnd(notification._id)}
                 onTouchCancel={() => handleSwipeEnd(notification._id)}
@@ -491,6 +559,7 @@ export const NotificationCenter = () => {
                       activeSwipe.notificationId === notification._id
                         ? `translateX(${activeSwipe.offsetX}px)`
                         : "translateX(0px)",
+                        // here card move styke is defined
                   }}
                 >
                 {/* This shows profile pic of the user who caused notification */}
